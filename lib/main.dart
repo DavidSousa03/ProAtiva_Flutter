@@ -1,15 +1,19 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
+import 'login_page.dart';
 import 'equipamentos_screen.dart';
 import 'pecas_screen.dart';
 import 'furos_screen.dart';
 import 'funcionarios_screen.dart';
+import 'logout_screen.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  final AuthService _authService = AuthService();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -19,7 +23,18 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => LoginPage(),
+        '/': (context) => FutureBuilder(
+          future: _authService.isAuthenticated(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasData && snapshot.data == true) {
+              return HomeScreen();
+            } else {
+              return LoginPage();
+            }
+          },
+        ),
         '/home': (context) => HomeScreen(),
         '/equipamentos': (context) => EquipamentosScreen(),
         '/pecas': (context) => PecasScreen(),
@@ -31,111 +46,9 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class LoginPage extends StatefulWidget {
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _userController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: EdgeInsets.all(20.0),
-                decoration: BoxDecoration(
-                  color: Color(0xFF303972),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                constraints: BoxConstraints(maxWidth: 600),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset('assets/Images/logo.png'),
-                    TextField(
-                      controller: _userController,
-                      decoration: InputDecoration(
-                        hintText: 'Usuário',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (text) {
-                        _userController.value = _userController.value.copyWith(
-                          text: text.toLowerCase(),
-                          selection: TextSelection.fromPosition(
-                            TextPosition(offset: text.length),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 20.0),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Senha',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 20.0),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoButton(
-                        color: Color(0xFF148CCC),
-                        child: const Text(
-                          "Acessar",
-                          style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600),
-                        ),
-                        onPressed: () {
-                          String usuario = _userController.text;
-                          String senha = _passwordController.text;
-                          if (usuario == 'adm.proativa' && senha == 'HelpDesk') {
-                            Navigator.of(context).pushReplacementNamed('/home');
-                          } else {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text("Erro"),
-                                  content: Text("Usuário ou senha incorretos."),
-                                  actions: [
-                                    TextButton(
-                                      child: Text("OK"),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class HomeScreen extends StatelessWidget {
+  final AuthService _authService = AuthService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,6 +56,15 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Tela Principal'),
         backgroundColor: Color(0xFF303972),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await _authService.logout();
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -190,45 +112,6 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class LogoutScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: <Widget>[
-            Text('Configurações', style: TextStyle(fontSize: 24)),
-            SizedBox(width: 10),
-            Icon(Icons.settings, size: 24),
-          ],
-        ),
-        backgroundColor: Color(0xFF303972),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: Text('Configurações', style: TextStyle(fontSize: 24)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/');
-                },
-                child: Text('Sair'),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
