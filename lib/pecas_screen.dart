@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/pecas';
-const String bearerToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjZmOWRiZTgzZThiNjA1MTJlOTE5MGYiLCJpYXQiOjE3MTg1OTM1NTEsImV4cCI6MTcxODU5NzE1MX0.zYpTP6wJ7xOoDr-BUEpS2Af7hATQOzjuqHQIngIY8qg';
 
 class Peca {
+  String id;
   String nome;
   String equipamento;
   int quantidade;
@@ -14,6 +15,7 @@ class Peca {
   String observacao;
 
   Peca({
+    required this.id,
     required this.nome,
     required this.equipamento,
     required this.quantidade,
@@ -24,6 +26,7 @@ class Peca {
 
   factory Peca.fromJson(Map<String, dynamic> json) {
     return Peca(
+      id: json['_id'],
       nome: json['nome'],
       equipamento: json['equipamento'],
       quantidade: json['quantidade'],
@@ -35,6 +38,7 @@ class Peca {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'nome': nome,
       'equipamento': equipamento,
       'quantidade': quantidade,
@@ -45,12 +49,18 @@ class Peca {
   }
 }
 
+Future<String?> getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('authToken');
+}
+
 Future<List<Peca>> fetchPecas() async {
+  final token = await getToken();
   final response = await http.get(
     Uri.parse(apiUrl),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
   );
 
@@ -58,51 +68,54 @@ Future<List<Peca>> fetchPecas() async {
     List jsonResponse = json.decode(response.body);
     return jsonResponse.map((peca) => Peca.fromJson(peca)).toList();
   } else {
-    throw Exception('Falha ao carregar peças');
+    throw Exception('Failed to load peças');
   }
 }
 
-Future<void> createPeca(Peca peca) async {
+Future<void> addPeca(Peca peca) async {
+  final token = await getToken();
   final response = await http.post(
     Uri.parse(apiUrl),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
     body: jsonEncode(peca.toJson()),
   );
 
   if (response.statusCode != 201) {
-    throw Exception('Falha ao adicionar peça');
+    throw Exception('Failed to add peça');
   }
 }
 
-Future<void> updatePeca(String codigo, Peca peca) async {
+Future<void> updatePeca(String id, Peca peca) async {
+  final token = await getToken();
   final response = await http.put(
-    Uri.parse('$apiUrl/$codigo'),
+    Uri.parse('$apiUrl/$id'),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
     body: jsonEncode(peca.toJson()),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Falha ao atualizar peça');
+    throw Exception('Failed to update peça');
   }
 }
 
-Future<void> deletePeca(String codigo) async {
+Future<void> deletePeca(String id) async {
+  final token = await getToken();
   final response = await http.delete(
-    Uri.parse('$apiUrl/$codigo'),
+    Uri.parse('$apiUrl/$id'),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
   );
 
   if (response.statusCode != 204) {
-    throw Exception('Falha ao deletar peça');
+    throw Exception('Failed to delete peça');
   }
 }
 
@@ -112,24 +125,53 @@ class PecasScreen extends StatefulWidget {
 }
 
 class _PecasScreenState extends State<PecasScreen> {
-  List<Peca> _pecasList = [];
-  String _searchQuery = '';
+  late Future<List<Peca>> futurePecas;
 
   @override
   void initState() {
     super.initState();
-    _fetchPecas();
+    futurePecas = fetchPecas();
   }
 
-  Future<void> _fetchPecas() async {
-    try {
-      final pecas = await fetchPecas();
+  void updatePecaQuantidade(Peca peca, int quantidade) {
+    final updatedPeca = Peca(
+      id: peca.id,
+      nome: peca.nome,
+      equipamento: peca.equipamento,
+      quantidade: quantidade,
+      codigo: peca.codigo,
+      marca: peca.marca,
+      observacao: peca.observacao,
+    );
+
+    updatePeca(peca.id, updatedPeca).then((_) {
       setState(() {
-        _pecasList = pecas;
+        futurePecas = fetchPecas();
       });
-    } catch (e) {
-      print(e);
-    }
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar quantidade.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
+  }
+
+  void addAndReload(Peca peca) {
+    addPeca(peca).then((_) {
+      setState(() {
+        futurePecas = fetchPecas();
+      });
+      Navigator.of(context).pop();
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao adicionar peça.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
   }
 
   @override
@@ -137,11 +179,10 @@ class _PecasScreenState extends State<PecasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: <Widget>[
+          children: [
             Image.asset(
               'assets/Images/logo.png',
               height: 40,
-              fit: BoxFit.contain,
             ),
             SizedBox(width: 10),
             Text('Peças'),
@@ -150,78 +191,146 @@ class _PecasScreenState extends State<PecasScreen> {
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              _showAddPecaDialog();
-            },
+            icon: Icon(Icons.person),
+            onPressed: () {},
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                labelText: 'Buscar Peça',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (query) {
-                setState(() {
-                  _searchQuery = query;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredPecasList().length,
-              itemBuilder: (context, index) {
-                final peca = _filteredPecasList()[index];
-                return ListTile(
-                  title: Text(peca.nome),
-                  subtitle: Text('Equipamento: ${peca.equipamento}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          _showEditPecaDialog(peca);
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _showDeleteConfirmationDialog(peca);
-                        },
-                      ),
-                    ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Peças',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton(
+                  onPressed: () => _showAddPecaDialog(),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                   ),
-                  onTap: () {
-                    _showPecaDetailsDialog(peca);
-                  },
-                );
+                  child: Text('Criar'),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: FutureBuilder<List<Peca>>(
+                future: futurePecas,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No data found'));
+                  } else {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        child: DataTable(
+                          columns: [
+                            DataColumn(label: Text('Nome')),
+                            DataColumn(label: Text('Equipamento')),
+                            DataColumn(label: Text('Quantidade')),
+                            DataColumn(label: Text('Código')),
+                            DataColumn(label: Text('Marca')),
+                            DataColumn(label: Text('Observação')),
+                            DataColumn(label: Text('Ações')),
+                          ],
+                          rows: snapshot.data!.map((peca) {
+                            return DataRow(cells: [
+                              DataCell(
+                                Text(peca.nome),
+                                onTap: () => _showPecaDetailsDialog(peca),
+                              ),
+                              DataCell(Text(peca.equipamento)),
+                              DataCell(
+                                TextField(
+                                  controller: TextEditingController(text: peca.quantidade.toString()),
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (value) {
+                                    final updatedQuantidade = int.tryParse(value) ?? peca.quantidade;
+                                    updatePecaQuantidade(peca, updatedQuantidade);
+                                  },
+                                ),
+                              ),
+                              DataCell(Text(peca.codigo)),
+                              DataCell(Text(peca.marca)),
+                              DataCell(Text(peca.observacao)),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit),
+                                      onPressed: () => _showEditPecaDialog(peca),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () => _showDeleteConfirmationDialog(peca),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            SizedBox(height: 8),
+            FutureBuilder<List<Peca>>(
+              future: futurePecas,
+              builder: (context, snapshot) {
+                return Text('Total - ${snapshot.data?.length ?? 0}');
               },
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: '',
           ),
         ],
+        currentIndex: 1, // Change the current index to match the icon for peças
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          // Handle navigation
+        },
       ),
     );
-  }
-
-  List<Peca> _filteredPecasList() {
-    return _pecasList.where((peca) {
-      final nomeLower = peca.nome.toLowerCase();
-      final queryLower = _searchQuery.toLowerCase();
-
-      if (_searchQuery.isNotEmpty && !nomeLower.contains(queryLower)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
   }
 
   void _showAddPecaDialog() {
@@ -244,36 +353,41 @@ class _PecasScreenState extends State<PecasScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
-                      decoration: InputDecoration(labelText: 'Nome da Peça'),
+                      decoration: InputDecoration(labelText: 'Nome'),
                       onChanged: (value) {
                         nome = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Equipamento'),
                       onChanged: (value) {
                         equipamento = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Quantidade'),
+                      keyboardType: TextInputType.number,
                       onChanged: (value) {
                         quantidade = int.tryParse(value) ?? 0;
                       },
-                      keyboardType: TextInputType.number,
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Código'),
                       onChanged: (value) {
                         codigo = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Marca'),
                       onChanged: (value) {
                         marca = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Observação'),
                       onChanged: (value) {
@@ -292,10 +406,10 @@ class _PecasScreenState extends State<PecasScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nome.isEmpty || equipamento.isEmpty || codigo.isEmpty) {
+                    if (nome.isEmpty || codigo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, Equipamento e Código são campos obrigatórios.'),
+                          content: Text('Nome e Código são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -303,6 +417,7 @@ class _PecasScreenState extends State<PecasScreen> {
                     }
 
                     final newPeca = Peca(
+                      id: '',
                       nome: nome,
                       equipamento: equipamento,
                       quantidade: quantidade,
@@ -311,17 +426,7 @@ class _PecasScreenState extends State<PecasScreen> {
                       observacao: observacao,
                     );
 
-                    createPeca(newPeca).then((_) {
-                      _fetchPecas();
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao adicionar peça.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    addAndReload(newPeca);
                   },
                   child: Text('Salvar'),
                 ),
@@ -354,7 +459,7 @@ class _PecasScreenState extends State<PecasScreen> {
                   children: <Widget>[
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Nome da Peça',
+                        labelText: 'Nome',
                         hintText: peca.nome,
                       ),
                       onChanged: (value) {
@@ -377,10 +482,10 @@ class _PecasScreenState extends State<PecasScreen> {
                         labelText: 'Quantidade',
                         hintText: peca.quantidade.toString(),
                       ),
+                      keyboardType: TextInputType.number,
                       onChanged: (value) {
                         quantidade = int.tryParse(value) ?? 0;
                       },
-                      keyboardType: TextInputType.number,
                     ),
                     SizedBox(height: 8),
                     TextField(
@@ -424,10 +529,10 @@ class _PecasScreenState extends State<PecasScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nome.isEmpty || equipamento.isEmpty || codigo.isEmpty) {
+                    if (nome.isEmpty || codigo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, Equipamento e Código são campos obrigatórios.'),
+                          content: Text('Nome e Código são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -435,6 +540,7 @@ class _PecasScreenState extends State<PecasScreen> {
                     }
 
                     final updatedPeca = Peca(
+                      id: peca.id,
                       nome: nome,
                       equipamento: equipamento,
                       quantidade: quantidade,
@@ -443,8 +549,8 @@ class _PecasScreenState extends State<PecasScreen> {
                       observacao: observacao,
                     );
 
-                    updatePeca(peca.codigo, updatedPeca).then((_) {
-                      _fetchPecas();
+                    updatePeca(peca.id, updatedPeca).then((_) {
+                      updatePecaQuantidade(peca, quantidade);
                       Navigator.of(context).pop();
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -481,8 +587,10 @@ class _PecasScreenState extends State<PecasScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deletePeca(peca.codigo).then((_) {
-                  _fetchPecas();
+                deletePeca(peca.id).then((_) {
+                  setState(() {
+                    futurePecas = fetchPecas();
+                  });
                   Navigator.of(context).pop();
                 }).catchError((error) {
                   ScaffoldMessenger.of(context).showSnackBar(

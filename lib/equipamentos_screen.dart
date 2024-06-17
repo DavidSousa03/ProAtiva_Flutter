@@ -38,7 +38,7 @@ class Equipment {
 
   factory Equipment.fromJson(Map<String, dynamic> json) {
     return Equipment(
-      id: json['_id'], // Assumindo que o campo ID no JSON retornado é '_id'
+      id: json['_id'],
       nome: json['nome'],
       modelo: json['modelo'],
       tamanho: json['tamanho'],
@@ -167,7 +167,6 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
               height: 40,
             ),
             SizedBox(width: 10),
-            Text('Equipamentos'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
@@ -396,7 +395,7 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                     }
 
                     final newEquipment = Equipment(
-                      id: '', // ID será gerado pelo backend
+                      id: '',
                       nome: nomeEquipamento,
                       modelo: modelo,
                       tamanho: tamanho,
@@ -536,7 +535,7 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                     }
 
                     final updatedEquipment = Equipment(
-                      id: equipment.id, // ID do equipamento para atualização
+                      id: equipment.id,
                       nome: nomeEquipamento,
                       modelo: modelo,
                       tamanho: tamanho,
@@ -552,10 +551,10 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                     );
 
                     updateEquipment(equipment.id, updatedEquipment).then((_) {
-                      setState(() {
-                        futureEquipments = fetchEquipments();
-                      });
-                      Navigator.of(context).pop();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => EquipamentosScreen()),
+                        (Route<dynamic> route) => false,
+                      );
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
