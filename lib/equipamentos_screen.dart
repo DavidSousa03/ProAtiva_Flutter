@@ -52,9 +52,15 @@ class Equipment {
       liberado: json['liberado'] ?? false,
       alugado: json['liberado'] != null ? !json['liberado'] : false,
       hostname: json['hostname'] ?? '',
-      dataDisponivel: json['dataDisponivel'] != null ? DateTime.parse(json['dataDisponivel']) : null,
-      dataAluguel: json['dataAluguel'] != null ? DateTime.parse(json['dataAluguel']) : null,
-      dataDevolucao: json['dataDevolucao'] != null ? DateTime.parse(json['dataDevolucao']) : null,
+      dataDisponivel: json['dataDisponivel'] != null
+          ? DateTime.parse(json['dataDisponivel'])
+          : null,
+      dataAluguel: json['dataAluguel'] != null
+          ? DateTime.parse(json['dataAluguel'])
+          : null,
+      dataDevolucao: json['dataDevolucao'] != null
+          ? DateTime.parse(json['dataDevolucao'])
+          : null,
       alugadoPor: json['alugadoPor'],
     );
   }
@@ -94,7 +100,9 @@ Future<List<Equipment>> fetchEquipments() async {
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
-    return jsonResponse.map((equipment) => Equipment.fromJson(equipment)).toList();
+    return jsonResponse
+        .map((equipment) => Equipment.fromJson(equipment))
+        .toList();
   } else {
     throw Exception('Failed to load equipment');
   }
@@ -180,13 +188,19 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
               height: 40,
             ),
             SizedBox(width: 10),
-            Text('Equipamentos'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Padding(
+              padding: const EdgeInsets.only(
+                  right: 8.0), 
+              child: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+            ),
             onPressed: _logout,
           ),
         ],
@@ -203,14 +217,18 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                   'Equipamentos',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                ElevatedButton(
+              ElevatedButton(
                   onPressed: () => _showAddEquipmentDialog(),
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
-                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    backgroundColor:
+                        WidgetStateProperty.all(Color(0xFF303972)),
+                    padding: WidgetStateProperty.all(
+                        EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    foregroundColor: WidgetStateProperty.all(
+                        Colors.white),
                   ),
                   child: Text('Criar'),
-                ),
+                )
               ],
             ),
             SizedBox(height: 16),
@@ -243,26 +261,34 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                             return DataRow(cells: [
                               DataCell(
                                 Text(equipment.nome),
-                                onTap: () => _showEquipmentDetailsDialog(equipment),
+                                onTap: () =>
+                                    _showEquipmentDetailsDialog(equipment),
                               ),
                               DataCell(Text(equipment.modelo)),
                               DataCell(Text(equipment.tamanho)),
                               DataCell(Text(equipment.patrimonio)),
                               DataCell(Text(equipment.marca)),
                               DataCell(Icon(
-                                equipment.liberado ? Icons.check_circle : Icons.cancel,
-                                color: equipment.liberado ? Colors.green : Colors.red,
+                                equipment.liberado
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color: equipment.liberado
+                                    ? Colors.green
+                                    : Colors.red,
                               )),
                               DataCell(
                                 Row(
                                   children: [
                                     IconButton(
                                       icon: Icon(Icons.edit),
-                                      onPressed: () => _showEditEquipmentDialog(equipment),
+                                      onPressed: () =>
+                                          _showEditEquipmentDialog(equipment),
                                     ),
                                     IconButton(
                                       icon: Icon(Icons.delete),
-                                      onPressed: () => _showDeleteConfirmationDialog(equipment),
+                                      onPressed: () =>
+                                          _showDeleteConfirmationDialog(
+                                              equipment),
                                     ),
                                   ],
                                 ),
@@ -311,16 +337,24 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EquipamentosScreen()));
               break;
             case 1:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => PecasScreen()));
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => FurosScreen()));
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => FuncionariosScreen()));
               break;
           }
         },
@@ -348,7 +382,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     TextField(
-                      decoration: InputDecoration(labelText: 'Nome do Equipamento'),
+                      decoration:
+                          InputDecoration(labelText: 'Nome do Equipamento'),
                       onChanged: (value) {
                         nomeEquipamento = value;
                       },
@@ -410,7 +445,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                     if (nomeEquipamento.isEmpty || modelo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome e Modelo são campos obrigatórios.'),
+                          content:
+                              Text('Nome e Modelo são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -550,7 +586,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                     if (nomeEquipamento.isEmpty || modelo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome e Modelo são campos obrigatórios.'),
+                          content:
+                              Text('Nome e Modelo são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -575,7 +612,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
 
                     updateEquipment(equipment.id, updatedEquipment).then((_) {
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => EquipamentosScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => EquipamentosScreen()),
                         (Route<dynamic> route) => false,
                       );
                     }).catchError((error) {

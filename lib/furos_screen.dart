@@ -198,13 +198,19 @@ class _FurosScreenState extends State<FurosScreen> {
               height: 40,
             ),
             SizedBox(width: 10),
-            Text('Furos'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Padding(
+              padding: const EdgeInsets.only(
+                  right: 8.0), 
+              child: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+            ),
             onPressed: _logout,
           ),
         ],
@@ -224,11 +230,15 @@ class _FurosScreenState extends State<FurosScreen> {
                 ElevatedButton(
                   onPressed: () => _showAddFuroDialog(),
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
-                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    backgroundColor:
+                        WidgetStateProperty.all(Color(0xFF303972)),
+                    padding: WidgetStateProperty.all(
+                        EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    foregroundColor: WidgetStateProperty.all(
+                        Colors.white),
                   ),
                   child: Text('Criar'),
-                ),
+                )
               ],
             ),
             SizedBox(height: 16),
@@ -325,7 +335,7 @@ class _FurosScreenState extends State<FurosScreen> {
             label: 'Funcionários',
           ),
         ],
-        currentIndex: 2, // Change the current index to match the icon for furos
+        currentIndex: 2, 
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {

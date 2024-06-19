@@ -24,17 +24,17 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => FutureBuilder(
-          future: _authService.isAuthenticated(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasData && snapshot.data == true) {
-              return HomeScreen();
-            } else {
-              return LoginPage();
-            }
-          },
-        ),
+              future: _authService.isAuthenticated(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasData && snapshot.data == true) {
+                  return HomeScreen();
+                } else {
+                  return LoginPage();
+                }
+              },
+            ),
         '/home': (context) => HomeScreen(),
         '/equipamentos': (context) => EquipamentosScreen(),
         '/pecas': (context) => PecasScreen(),
@@ -53,30 +53,45 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xFF303972),
       appBar: AppBar(
-        title: Text('Tela Principal'),
+        title: Image.asset(
+        'assets/images/logo.png',
+        height: 40,
+        ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Padding(
+              padding: const EdgeInsets.only(
+                  right: 8.0),
+              child: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+            ),
             onPressed: () async {
               await _authService.logout();
               Navigator.pushReplacementNamed(context, '/');
             },
-          ),
+          )
         ],
       ),
       body: Column(
         children: <Widget>[
-          _buildExpandedButton(context, 'Equipamentos', 'assets/Images/equipamentos.png', EquipamentosScreen()),
-          _buildExpandedButton(context, 'Peças', 'assets/Images/pecas-de-reposicao.png', PecasScreen()),
-          _buildExpandedButton(context, 'Furos', 'assets/Images/furar.png', FurosScreen()),
-          _buildExpandedButton(context, 'Funcionários', 'assets/Images/funcionarios.png', FuncionariosScreen()),
+          _buildExpandedButton(context, 'Equipamentos',
+              'assets/Images/equipamentos.png', EquipamentosScreen()),
+          _buildExpandedButton(context, 'Peças',
+              'assets/Images/pecas-de-reposicao.png', PecasScreen()),
+          _buildExpandedButton(
+              context, 'Furos', 'assets/Images/furar.png', FurosScreen()),
+          _buildExpandedButton(context, 'Funcionários',
+              'assets/Images/funcionarios.png', FuncionariosScreen()),
         ],
       ),
     );
   }
 
-  Widget _buildExpandedButton(BuildContext context, String title, String imagePath, Widget nextScreen) {
+  Widget _buildExpandedButton(
+      BuildContext context, String title, String imagePath, Widget nextScreen) {
     return Expanded(
       child: GestureDetector(
         onTap: () {

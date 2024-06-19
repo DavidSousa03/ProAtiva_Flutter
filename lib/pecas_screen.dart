@@ -198,13 +198,19 @@ class _PecasScreenState extends State<PecasScreen> {
               height: 40,
             ),
             SizedBox(width: 10),
-            Text('Peças'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Padding(
+              padding: const EdgeInsets.only(
+                  right: 8.0), 
+              child: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+            ),
             onPressed: _logout,
           ),
         ],
@@ -224,11 +230,15 @@ class _PecasScreenState extends State<PecasScreen> {
                 ElevatedButton(
                   onPressed: () => _showAddPecaDialog(),
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
-                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    backgroundColor:
+                        WidgetStateProperty.all(Color(0xFF303972)),
+                    padding: WidgetStateProperty.all(
+                        EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    foregroundColor: WidgetStateProperty.all(
+                        Colors.white),
                   ),
                   child: Text('Criar'),
-                ),
+                )
               ],
             ),
             SizedBox(height: 16),

@@ -76,7 +76,9 @@ Future<List<Funcionario>> fetchFuncionarios() async {
 
   if (response.statusCode == 200) {
     List jsonResponse = json.decode(response.body);
-    return jsonResponse.map((funcionario) => Funcionario.fromJson(funcionario)).toList();
+    return jsonResponse
+        .map((funcionario) => Funcionario.fromJson(funcionario))
+        .toList();
   } else {
     print('Failed to load funcionários: ${response.statusCode}');
     print('Response body: ${response.body}');
@@ -215,14 +217,19 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
               'assets/Images/logo.png',
               height: 40,
             ),
-            SizedBox(width: 10), 
-            Text('Funcionários'),
+            SizedBox(width: 10),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Icon(
+                Icons.logout,
+                color: Colors.white,
+              ),
+            ),
             onPressed: _logout,
           ),
         ],
@@ -242,11 +249,15 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                 ElevatedButton(
                   onPressed: () => _showAddFuncionarioDialog(),
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
-                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    backgroundColor:
+                        WidgetStateProperty.all(Color(0xFF303972)),
+                    padding: WidgetStateProperty.all(
+                        EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                    foregroundColor: WidgetStateProperty.all(
+                        Colors.white),
                   ),
                   child: Text('Criar'),
-                ),
+                )
               ],
             ),
             SizedBox(height: 16),
@@ -286,11 +297,15 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                                   children: [
                                     IconButton(
                                       icon: Icon(Icons.edit),
-                                      onPressed: () => _showEditFuncionarioDialog(funcionario),
+                                      onPressed: () =>
+                                          _showEditFuncionarioDialog(
+                                              funcionario),
                                     ),
                                     IconButton(
                                       icon: Icon(Icons.delete),
-                                      onPressed: () => _showDeleteConfirmationDialog(funcionario),
+                                      onPressed: () =>
+                                          _showDeleteConfirmationDialog(
+                                              funcionario),
                                     ),
                                   ],
                                 ),
@@ -339,16 +354,24 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EquipamentosScreen()));
               break;
             case 1:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => PecasScreen()));
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => FurosScreen()));
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => FuncionariosScreen()));
               break;
           }
         },
@@ -432,7 +455,8 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                     if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, E-mail e Senha são campos obrigatórios.'),
+                          content: Text(
+                              'Nome, E-mail e Senha são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -555,7 +579,8 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                     if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, E-mail e Senha são campos obrigatórios.'),
+                          content: Text(
+                              'Nome, E-mail e Senha são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -572,9 +597,11 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                       senha: senha,
                     );
 
-                    updateFuncionario(funcionario.id, updatedFuncionario).then((_) {
+                    updateFuncionario(funcionario.id, updatedFuncionario)
+                        .then((_) {
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => FuncionariosScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => FuncionariosScreen()),
                         (Route<dynamic> route) => false,
                       );
                     }).catchError((error) {
