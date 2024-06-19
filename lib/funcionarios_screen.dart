@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/equipamentos_screen.dart';
-import 'package:flutter_application_1/furos_screen.dart';
-import 'package:flutter_application_1/pecas_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
+import 'equipamentos_screen.dart';
+import 'pecas_screen.dart';
+import 'furos_screen.dart';
+import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/users';
 const String apiUrlTwo = 'https://proativa.onrender.com/user';
@@ -179,6 +181,14 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
     futureFuncionarios = fetchFuncionarios();
   }
 
+  void _logout() async {
+    await AuthService().logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   void addAndReload(Funcionario funcionario) {
     addFuncionario(funcionario).then((_) {
       setState(() {
@@ -206,13 +216,14 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
               height: 40,
             ),
             SizedBox(width: 10), 
+            Text('Funcionários'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {},
+            icon: Icon(Icons.logout),
+            onPressed: _logout,
           ),
         ],
       ),
@@ -652,6 +663,76 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Proativa',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    EquipamentosScreen(),
+    PecasScreen(),
+    FurosScreen(),
+    FuncionariosScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'Equipamentos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Funcionários',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }

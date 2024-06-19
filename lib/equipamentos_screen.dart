@@ -5,6 +5,8 @@ import 'package:flutter_application_1/furos_screen.dart';
 import 'package:flutter_application_1/pecas_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
+import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/equipamentos';
 
@@ -159,6 +161,14 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
     futureEquipments = fetchEquipments();
   }
 
+  void _logout() async {
+    await AuthService().logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,13 +180,14 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
               height: 40,
             ),
             SizedBox(width: 10),
+            Text('Equipamentos'),
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {},
+            icon: Icon(Icons.logout),
+            onPressed: _logout,
           ),
         ],
       ),

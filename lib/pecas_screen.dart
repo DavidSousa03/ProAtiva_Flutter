@@ -5,6 +5,8 @@ import 'package:flutter_application_1/funcionarios_screen.dart';
 import 'package:flutter_application_1/furos_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
+import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/pecas';
 
@@ -136,6 +138,14 @@ class _PecasScreenState extends State<PecasScreen> {
     futurePecas = fetchPecas();
   }
 
+  void _logout() async {
+    await AuthService().logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   void updatePecaQuantidade(Peca peca, int quantidade) {
     final updatedPeca = Peca(
       id: peca.id,
@@ -194,8 +204,8 @@ class _PecasScreenState extends State<PecasScreen> {
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {},
+            icon: Icon(Icons.logout),
+            onPressed: _logout,
           ),
         ],
       ),
@@ -322,7 +332,7 @@ class _PecasScreenState extends State<PecasScreen> {
             label: 'Funcionários',
           ),
         ],
-        currentIndex: 1,
+        currentIndex: 1, // Change the current index to match the icon for peças
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {

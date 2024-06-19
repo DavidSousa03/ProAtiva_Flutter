@@ -5,6 +5,8 @@ import 'package:flutter_application_1/funcionarios_screen.dart';
 import 'package:flutter_application_1/pecas_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
+import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/furos';
 
@@ -136,6 +138,14 @@ class _FurosScreenState extends State<FurosScreen> {
     futureFuros = fetchFuros();
   }
 
+  void _logout() async {
+    await AuthService().logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   void updateFuroLiberado(Furo furo, bool liberado) {
     final updatedFuro = Furo(
       id: furo.id,
@@ -194,8 +204,8 @@ class _FurosScreenState extends State<FurosScreen> {
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {},
+            icon: Icon(Icons.logout),
+            onPressed: _logout,
           ),
         ],
       ),
@@ -315,7 +325,7 @@ class _FurosScreenState extends State<FurosScreen> {
             label: 'Funcionários',
           ),
         ],
-        currentIndex: 2,
+        currentIndex: 2, // Change the current index to match the icon for furos
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {
