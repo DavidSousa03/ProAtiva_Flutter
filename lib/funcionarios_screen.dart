@@ -1,56 +1,74 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter_application_1/equipamentos_screen.dart';
+import 'package:flutter_application_1/furos_screen.dart';
+import 'package:flutter_application_1/pecas_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-const String apiUrl = 'https://proativa.onrender.com/funcionarios';
-const String bearerToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjZmOWRiZTgzZThiNjA1MTJlOTE5MGYiLCJpYXQiOjE3MTg1OTM1NTEsImV4cCI6MTcxODU5NzE1MX0.zYpTP6wJ7xOoDr-BUEpS2Af7hATQOzjuqHQIngIY8qg';
+const String apiUrl = 'https://proativa.onrender.com/users';
+const String apiUrlTwo = 'https://proativa.onrender.com/user';
 
 class Funcionario {
+  String id;
   String nome;
   String telefone;
   String endereco;
   String cargo;
-  String acesso;
+  String email;
   String senha;
 
   Funcionario({
+    required this.id,
     required this.nome,
     required this.telefone,
     required this.endereco,
     required this.cargo,
-    required this.acesso,
+    required this.email,
     required this.senha,
   });
 
   factory Funcionario.fromJson(Map<String, dynamic> json) {
     return Funcionario(
-      nome: json['nome'],
-      telefone: json['telefone'],
-      endereco: json['endereco'],
-      cargo: json['cargo'],
-      acesso: json['acesso'],
-      senha: json['senha'],
+      id: json['_id'] ?? 'N/A',
+      nome: json['name'] ?? 'N/A',
+      telefone: json['phone'] ?? 'N/A',
+      endereco: json['address'] ?? 'N/A',
+      cargo: json['role'] ?? 'N/A',
+      email: json['email'] ?? 'N/A',
+      senha: json['password'] ?? 'N/A',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'nome': nome,
-      'telefone': telefone,
-      'endereco': endereco,
-      'cargo': cargo,
-      'acesso': acesso,
-      'senha': senha,
+      'id': id,
+      'name': nome,
+      'phone': telefone,
+      'address': endereco,
+      'role': cargo,
+      'email': email,
+      'password': senha,
     };
   }
 }
 
+Future<String?> getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('authToken');
+}
+
 Future<List<Funcionario>> fetchFuncionarios() async {
+  final token = await getToken();
+  if (token == null) {
+    throw Exception('Token not found');
+  }
+
   final response = await http.get(
     Uri.parse(apiUrl),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
   );
 
@@ -58,51 +76,92 @@ Future<List<Funcionario>> fetchFuncionarios() async {
     List jsonResponse = json.decode(response.body);
     return jsonResponse.map((funcionario) => Funcionario.fromJson(funcionario)).toList();
   } else {
-    throw Exception('Falha ao carregar funcionários');
+    print('Failed to load funcionários: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to load funcionários');
   }
 }
 
-Future<void> createFuncionario(Funcionario funcionario) async {
+Future<void> addFuncionario(Funcionario funcionario) async {
+  final token = await getToken();
+  if (token == null) {
+    throw Exception('Token not found');
+  }
+
   final response = await http.post(
-    Uri.parse(apiUrl),
+    Uri.parse(apiUrlTwo),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
-    body: jsonEncode(funcionario.toJson()),
+    body: jsonEncode({
+      'name': funcionario.nome,
+      'phone': funcionario.telefone,
+      'address': funcionario.endereco,
+      'role': funcionario.cargo,
+      'email': funcionario.email,
+      'password': funcionario.senha
+    }),
   );
 
   if (response.statusCode != 201) {
-    throw Exception('Falha ao adicionar funcionário');
+    print('Failed to add funcionário: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to add funcionário');
   }
 }
 
-Future<void> updateFuncionario(String acesso, Funcionario funcionario) async {
+Future<void> updateFuncionario(String id, Funcionario funcionario) async {
+  final token = await getToken();
+  if (token == null) {
+    throw Exception('Token not found');
+  }
+
   final response = await http.put(
-    Uri.parse('$apiUrl/$acesso'),
+    Uri.parse(apiUrlTwo),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
-    body: jsonEncode(funcionario.toJson()),
+    body: jsonEncode({
+      'id': id,
+      'data': {
+        'name': funcionario.nome,
+        'phone': funcionario.telefone,
+        'address': funcionario.endereco,
+        'role': funcionario.cargo,
+        'email': funcionario.email,
+        'password': funcionario.senha,
+      }
+    }),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Falha ao atualizar funcionário');
+    print('Failed to update funcionário: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to update funcionário');
   }
 }
 
-Future<void> deleteFuncionario(String acesso) async {
+Future<void> deleteFuncionario(String id) async {
+  final token = await getToken();
+  if (token == null) {
+    throw Exception('Token not found');
+  }
+
   final response = await http.delete(
-    Uri.parse('$apiUrl/$acesso'),
+    Uri.parse(apiUrlTwo),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
+    body: jsonEncode({'id': id}),
   );
 
-  if (response.statusCode != 204) {
-    throw Exception('Falha ao deletar funcionário');
+  if (response.statusCode != 200) {
+    print('Failed to delete funcionário: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    throw Exception('Failed to delete funcionário');
   }
 }
 
@@ -112,24 +171,28 @@ class FuncionariosScreen extends StatefulWidget {
 }
 
 class _FuncionariosScreenState extends State<FuncionariosScreen> {
-  List<Funcionario> _funcionariosList = [];
-  String _searchQuery = '';
+  late Future<List<Funcionario>> futureFuncionarios;
 
   @override
   void initState() {
     super.initState();
-    _fetchFuncionarios();
+    futureFuncionarios = fetchFuncionarios();
   }
 
-  Future<void> _fetchFuncionarios() async {
-    try {
-      final funcionarios = await fetchFuncionarios();
+  void addAndReload(Funcionario funcionario) {
+    addFuncionario(funcionario).then((_) {
       setState(() {
-        _funcionariosList = funcionarios;
+        futureFuncionarios = fetchFuncionarios();
       });
-    } catch (e) {
-      print(e);
-    }
+      Navigator.of(context).pop();
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao adicionar funcionário.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
   }
 
   @override
@@ -137,91 +200,149 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: <Widget>[
+          children: [
             Image.asset(
               'assets/Images/logo.png',
               height: 40,
-              fit: BoxFit.contain,
             ),
-            SizedBox(width: 10),
-            Text('Funcionários'),
+            SizedBox(width: 10), 
           ],
         ),
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              _showAddFuncionarioDialog();
-            },
+            icon: Icon(Icons.person),
+            onPressed: () {},
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                labelText: 'Buscar Funcionário',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (query) {
-                setState(() {
-                  _searchQuery = query;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredFuncionariosList().length,
-              itemBuilder: (context, index) {
-                final funcionario = _filteredFuncionariosList()[index];
-                return ListTile(
-                  title: Text(funcionario.nome),
-                  subtitle: Text('Cargo: ${funcionario.cargo}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          _showEditFuncionarioDialog(funcionario);
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _showDeleteConfirmationDialog(funcionario);
-                        },
-                      ),
-                    ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Funcionários',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton(
+                  onPressed: () => _showAddFuncionarioDialog(),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                   ),
-                  onTap: () {
-                    _showFuncionarioDetailsDialog(funcionario);
-                  },
-                );
+                  child: Text('Criar'),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: FutureBuilder<List<Funcionario>>(
+                future: futureFuncionarios,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No data found'));
+                  } else {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        child: DataTable(
+                          columns: [
+                            DataColumn(label: Text('Nome')),
+                            DataColumn(label: Text('Telefone')),
+                            DataColumn(label: Text('Endereço')),
+                            DataColumn(label: Text('Cargo')),
+                            DataColumn(label: Text('E-mail')),
+                            DataColumn(label: Text('Ações')),
+                          ],
+                          rows: snapshot.data!.map((funcionario) {
+                            return DataRow(cells: [
+                              DataCell(Text(funcionario.nome)),
+                              DataCell(Text(funcionario.telefone)),
+                              DataCell(Text(funcionario.endereco)),
+                              DataCell(Text(funcionario.cargo)),
+                              DataCell(Text(funcionario.email)),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit),
+                                      onPressed: () => _showEditFuncionarioDialog(funcionario),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () => _showDeleteConfirmationDialog(funcionario),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            SizedBox(height: 8),
+            FutureBuilder<List<Funcionario>>(
+              future: futureFuncionarios,
+              builder: (context, snapshot) {
+                return Text('Total - ${snapshot.data?.length ?? 0}');
               },
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'Equipamentos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Funcionários',
           ),
         ],
+        currentIndex: 3,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              break;
+            case 1:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              break;
+            case 2:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              break;
+            case 3:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              break;
+          }
+        },
       ),
     );
-  }
-
-  List<Funcionario> _filteredFuncionariosList() {
-    return _funcionariosList.where((funcionario) {
-      final nomeLower = funcionario.nome.toLowerCase();
-      final queryLower = _searchQuery.toLowerCase();
-
-      if (_searchQuery.isNotEmpty && !nomeLower.contains(queryLower)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
   }
 
   void _showAddFuncionarioDialog() {
@@ -232,7 +353,7 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
         String telefone = '';
         String endereco = '';
         String cargo = '';
-        String acesso = '';
+        String email = '';
         String senha = '';
 
         return StatefulBuilder(
@@ -249,36 +370,41 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                         nome = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Telefone'),
                       onChanged: (value) {
                         telefone = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Endereço'),
                       onChanged: (value) {
                         endereco = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Cargo'),
                       onChanged: (value) {
                         cargo = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
-                      decoration: InputDecoration(labelText: 'Acesso (e-mail)'),
+                      decoration: InputDecoration(labelText: 'E-mail'),
                       onChanged: (value) {
-                        acesso = value;
+                        email = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Senha'),
+                      obscureText: true,
                       onChanged: (value) {
                         senha = value;
                       },
-                      obscureText: true,
                     ),
                   ],
                 ),
@@ -292,10 +418,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nome.isEmpty || acesso.isEmpty || senha.isEmpty) {
+                    if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, Acesso e Senha são campos obrigatórios.'),
+                          content: Text('Nome, E-mail e Senha são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -303,25 +429,16 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                     }
 
                     final newFuncionario = Funcionario(
+                      id: '',
                       nome: nome,
                       telefone: telefone,
                       endereco: endereco,
                       cargo: cargo,
-                      acesso: acesso,
+                      email: email,
                       senha: senha,
                     );
 
-                    createFuncionario(newFuncionario).then((_) {
-                      _fetchFuncionarios();
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao adicionar funcionário.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    addAndReload(newFuncionario);
                   },
                   child: Text('Salvar'),
                 ),
@@ -341,7 +458,7 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
         String telefone = funcionario.telefone;
         String endereco = funcionario.endereco;
         String cargo = funcionario.cargo;
-        String acesso = funcionario.acesso;
+        String email = funcionario.email;
         String senha = funcionario.senha;
 
         return StatefulBuilder(
@@ -394,11 +511,11 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                     SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(
-                        labelText: 'Acesso (e-mail)',
-                        hintText: funcionario.acesso,
+                        labelText: 'E-mail',
+                        hintText: funcionario.email,
                       ),
                       onChanged: (value) {
-                        acesso = value;
+                        email = value;
                       },
                     ),
                     SizedBox(height: 8),
@@ -407,10 +524,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                         labelText: 'Senha',
                         hintText: funcionario.senha,
                       ),
+                      obscureText: true,
                       onChanged: (value) {
                         senha = value;
                       },
-                      obscureText: true,
                     ),
                   ],
                 ),
@@ -424,10 +541,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (nome.isEmpty || acesso.isEmpty || senha.isEmpty) {
+                    if (nome.isEmpty || email.isEmpty || senha.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome, Acesso e Senha são campos obrigatórios.'),
+                          content: Text('Nome, E-mail e Senha são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -435,17 +552,20 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                     }
 
                     final updatedFuncionario = Funcionario(
+                      id: funcionario.id,
                       nome: nome,
                       telefone: telefone,
                       endereco: endereco,
                       cargo: cargo,
-                      acesso: acesso,
+                      email: email,
                       senha: senha,
                     );
 
-                    updateFuncionario(funcionario.acesso, updatedFuncionario).then((_) {
-                      _fetchFuncionarios();
-                      Navigator.of(context).pop();
+                    updateFuncionario(funcionario.id, updatedFuncionario).then((_) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => FuncionariosScreen()),
+                        (Route<dynamic> route) => false,
+                      );
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -481,8 +601,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deleteFuncionario(funcionario.acesso).then((_) {
-                  _fetchFuncionarios();
+                deleteFuncionario(funcionario.id).then((_) {
+                  setState(() {
+                    futureFuncionarios = fetchFuncionarios();
+                  });
                   Navigator.of(context).pop();
                 }).catchError((error) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -515,7 +637,7 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                 Text('Telefone: ${funcionario.telefone}'),
                 Text('Endereço: ${funcionario.endereco}'),
                 Text('Cargo: ${funcionario.cargo}'),
-                Text('Acesso (e-mail): ${funcionario.acesso}'),
+                Text('E-mail: ${funcionario.email}'),
                 Text('Senha: ${funcionario.senha}'),
               ],
             ),
@@ -530,6 +652,76 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Proativa',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    EquipamentosScreen(),
+    PecasScreen(),
+    FurosScreen(),
+    FuncionariosScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'Equipamentos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Funcionários',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }

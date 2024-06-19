@@ -1,12 +1,12 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/furos';
-const String bearerToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjZmOWRiZTgzZThiNjA1MTJlOTE5MGYiLCJpYXQiOjE3MTg1OTM1NTEsImV4cCI6MTcxODU5NzE1MX0.zYpTP6wJ7xOoDr-BUEpS2Af7hATQOzjuqHQIngIY8qg';
 
 class Furo {
+  String id;
   String obra;
   String cliente;
   String responsavel;
@@ -15,6 +15,7 @@ class Furo {
   bool liberado;
 
   Furo({
+    required this.id,
     required this.obra,
     required this.cliente,
     required this.responsavel,
@@ -25,6 +26,7 @@ class Furo {
 
   factory Furo.fromJson(Map<String, dynamic> json) {
     return Furo(
+      id: json['_id'],
       obra: json['obra'],
       cliente: json['cliente'],
       responsavel: json['responsavel'],
@@ -36,6 +38,7 @@ class Furo {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'obra': obra,
       'cliente': cliente,
       'responsavel': responsavel,
@@ -46,12 +49,18 @@ class Furo {
   }
 }
 
+Future<String?> getToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('authToken');
+}
+
 Future<List<Furo>> fetchFuros() async {
+  final token = await getToken();
   final response = await http.get(
     Uri.parse(apiUrl),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
   );
 
@@ -59,51 +68,54 @@ Future<List<Furo>> fetchFuros() async {
     List jsonResponse = json.decode(response.body);
     return jsonResponse.map((furo) => Furo.fromJson(furo)).toList();
   } else {
-    throw Exception('Falha ao carregar furos');
+    throw Exception('Failed to load furos');
   }
 }
 
-Future<void> createFuro(Furo furo) async {
+Future<void> addFuro(Furo furo) async {
+  final token = await getToken();
   final response = await http.post(
     Uri.parse(apiUrl),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
     body: jsonEncode(furo.toJson()),
   );
 
   if (response.statusCode != 201) {
-    throw Exception('Falha ao adicionar furo');
+    throw Exception('Failed to add furo');
   }
 }
 
-Future<void> updateFuro(String obra, Furo furo) async {
+Future<void> updateFuro(String id, Furo furo) async {
+  final token = await getToken();
   final response = await http.put(
-    Uri.parse('$apiUrl/$obra'),
+    Uri.parse('$apiUrl/$id'),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
     body: jsonEncode(furo.toJson()),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Falha ao atualizar furo');
+    throw Exception('Failed to update furo');
   }
 }
 
-Future<void> deleteFuro(String obra) async {
+Future<void> deleteFuro(String id) async {
+  final token = await getToken();
   final response = await http.delete(
-    Uri.parse('$apiUrl/$obra'),
+    Uri.parse('$apiUrl/$id'),
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $bearerToken',
+      'Authorization': 'Bearer $token',
     },
   );
 
   if (response.statusCode != 204) {
-    throw Exception('Falha ao deletar furo');
+    throw Exception('Failed to delete furo');
   }
 }
 
@@ -113,24 +125,53 @@ class FurosScreen extends StatefulWidget {
 }
 
 class _FurosScreenState extends State<FurosScreen> {
-  List<Furo> _furosList = [];
-  String _searchQuery = '';
+  late Future<List<Furo>> futureFuros;
 
   @override
   void initState() {
     super.initState();
-    _fetchFuros();
+    futureFuros = fetchFuros();
   }
 
-  Future<void> _fetchFuros() async {
-    try {
-      final furos = await fetchFuros();
+  void updateFuroLiberado(Furo furo, bool liberado) {
+    final updatedFuro = Furo(
+      id: furo.id,
+      obra: furo.obra,
+      cliente: furo.cliente,
+      responsavel: furo.responsavel,
+      assistente: furo.assistente,
+      observacao: furo.observacao,
+      liberado: liberado,
+    );
+
+    updateFuro(furo.id, updatedFuro).then((_) {
       setState(() {
-        _furosList = furos;
+        futureFuros = fetchFuros();
       });
-    } catch (e) {
-      print(e);
-    }
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar liberado.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
+  }
+
+  void addAndReload(Furo furo) {
+    addFuro(furo).then((_) {
+      setState(() {
+        futureFuros = fetchFuros();
+      });
+      Navigator.of(context).pop();
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao adicionar furo.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
   }
 
   @override
@@ -138,11 +179,10 @@ class _FurosScreenState extends State<FurosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
-          children: <Widget>[
+          children: [
             Image.asset(
               'assets/Images/logo.png',
               height: 40,
-              fit: BoxFit.contain,
             ),
             SizedBox(width: 10),
             Text('Furos'),
@@ -151,78 +191,139 @@ class _FurosScreenState extends State<FurosScreen> {
         backgroundColor: Color(0xFF303972),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () {
-              _showAddFuroDialog();
-            },
+            icon: Icon(Icons.person),
+            onPressed: () {},
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                labelText: 'Buscar Furo',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (query) {
-                setState(() {
-                  _searchQuery = query;
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredFurosList().length,
-              itemBuilder: (context, index) {
-                final furo = _filteredFurosList()[index];
-                return ListTile(
-                  title: Text(furo.obra),
-                  subtitle: Text('Cliente: ${furo.cliente}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          _showEditFuroDialog(furo);
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _showDeleteConfirmationDialog(furo);
-                        },
-                      ),
-                    ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Furos',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton(
+                  onPressed: () => _showAddFuroDialog(),
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                   ),
-                  onTap: () {
-                    _showFuroDetailsDialog(furo);
-                  },
-                );
+                  child: Text('Criar'),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: FutureBuilder<List<Furo>>(
+                future: futureFuros,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(child: Text('No data found'));
+                  } else {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Container(
+                        width: MediaQuery.of(context).size.width,
+                        child: DataTable(
+                          columns: [
+                            DataColumn(label: Text('Obra')),
+                            DataColumn(label: Text('Cliente')),
+                            DataColumn(label: Text('Responsável')),
+                            DataColumn(label: Text('Assistente')),
+                            DataColumn(label: Text('Observação')),
+                            DataColumn(label: Text('Liberado')),
+                            DataColumn(label: Text('Ações')),
+                          ],
+                          rows: snapshot.data!.map((furo) {
+                            return DataRow(cells: [
+                              DataCell(
+                                Text(furo.obra),
+                                onTap: () => _showFuroDetailsDialog(furo),
+                              ),
+                              DataCell(Text(furo.cliente)),
+                              DataCell(Text(furo.responsavel)),
+                              DataCell(Text(furo.assistente)),
+                              DataCell(Text(furo.observacao)),
+                              DataCell(Checkbox(
+                                value: furo.liberado,
+                                onChanged: (value) {
+                                  updateFuroLiberado(furo, value ?? furo.liberado);
+                                },
+                              )),
+                              DataCell(
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit),
+                                      onPressed: () => _showEditFuroDialog(furo),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete),
+                                      onPressed: () => _showDeleteConfirmationDialog(furo),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            SizedBox(height: 8),
+            FutureBuilder<List<Furo>>(
+              future: futureFuros,
+              builder: (context, snapshot) {
+                return Text('Total - ${snapshot.data?.length ?? 0}');
               },
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: '',
           ),
         ],
+        currentIndex: 2, // Change the current index to match the icon for furos
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          // Handle navigation
+        },
       ),
     );
-  }
-
-  List<Furo> _filteredFurosList() {
-    return _furosList.where((furo) {
-      final obraLower = furo.obra.toLowerCase();
-      final queryLower = _searchQuery.toLowerCase();
-
-      if (_searchQuery.isNotEmpty && !obraLower.contains(queryLower)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
   }
 
   void _showAddFuroDialog() {
@@ -250,30 +351,35 @@ class _FurosScreenState extends State<FurosScreen> {
                         obra = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Cliente'),
                       onChanged: (value) {
                         cliente = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Responsável'),
                       onChanged: (value) {
                         responsavel = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Assistente'),
                       onChanged: (value) {
                         assistente = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     TextField(
                       decoration: InputDecoration(labelText: 'Observação'),
                       onChanged: (value) {
                         observacao = value;
                       },
                     ),
+                    SizedBox(height: 8),
                     Row(
                       children: <Widget>[
                         Text('Liberado: '),
@@ -299,10 +405,10 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty || cliente.isEmpty) {
+                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Obra e Cliente são campos obrigatórios.'),
+                          content: Text('Obra, Cliente e Responsável são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -310,6 +416,7 @@ class _FurosScreenState extends State<FurosScreen> {
                     }
 
                     final newFuro = Furo(
+                      id: '',
                       obra: obra,
                       cliente: cliente,
                       responsavel: responsavel,
@@ -318,17 +425,7 @@ class _FurosScreenState extends State<FurosScreen> {
                       liberado: liberado,
                     );
 
-                    createFuro(newFuro).then((_) {
-                      _fetchFuros();
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao adicionar furo.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    addAndReload(newFuro);
                   },
                   child: Text('Salvar'),
                 ),
@@ -434,10 +531,10 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty || cliente.isEmpty) {
+                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Obra e Cliente são campos obrigatórios.'),
+                          content: Text('Obra, Cliente e Responsável são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -445,6 +542,7 @@ class _FurosScreenState extends State<FurosScreen> {
                     }
 
                     final updatedFuro = Furo(
+                      id: furo.id,
                       obra: obra,
                       cliente: cliente,
                       responsavel: responsavel,
@@ -453,9 +551,11 @@ class _FurosScreenState extends State<FurosScreen> {
                       liberado: liberado,
                     );
 
-                    updateFuro(furo.obra, updatedFuro).then((_) {
-                      _fetchFuros();
-                      Navigator.of(context).pop();
+                    updateFuro(furo.id, updatedFuro).then((_) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => FurosScreen()),
+                        (Route<dynamic> route) => false,
+                      );
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -491,8 +591,10 @@ class _FurosScreenState extends State<FurosScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deleteFuro(furo.obra).then((_) {
-                  _fetchFuros();
+                deleteFuro(furo.id).then((_) {
+                  setState(() {
+                    futureFuros = fetchFuros();
+                  });
                   Navigator.of(context).pop();
                 }).catchError((error) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -542,4 +644,75 @@ class _FurosScreenState extends State<FurosScreen> {
       },
     );
   }
+}
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Proativa',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    equipamentos_screen(),
+    pecas_screen(),
+    FurosScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'Equipamentos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.build),
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.amber[800],
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+pecas_screen() {
+}
+
+equipamentos_screen() {
 }
