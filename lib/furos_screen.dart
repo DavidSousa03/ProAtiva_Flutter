@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/equipamentos_screen.dart';
+import 'package:flutter_application_1/funcionarios_screen.dart';
+import 'package:flutter_application_1/pecas_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -297,30 +300,39 @@ class _FurosScreenState extends State<FurosScreen> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.menu),
-            label: '',
+            label: 'Equipamentos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.build),
-            label: '',
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: '',
+            label: 'Funcionários',
           ),
         ],
-        currentIndex: 2, // Change the current index to match the icon for furos
+        currentIndex: 2,
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {
-          // Handle navigation
+          switch (index) {
+            case 0:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              break;
+            case 1:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              break;
+            case 2:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              break;
+            case 3:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              break;
+          }
         },
       ),
     );
@@ -644,75 +656,4 @@ class _FurosScreenState extends State<FurosScreen> {
       },
     );
   }
-}
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Proativa',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    equipamentos_screen(),
-    pecas_screen(),
-    FurosScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu),
-            label: 'Equipamentos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Peças',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: 'Furos',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
-    );
-  }
-}
-
-pecas_screen() {
-}
-
-equipamentos_screen() {
 }

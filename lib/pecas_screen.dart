@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/equipamentos_screen.dart';
+import 'package:flutter_application_1/funcionarios_screen.dart';
+import 'package:flutter_application_1/furos_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -304,30 +307,39 @@ class _PecasScreenState extends State<PecasScreen> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.menu),
-            label: '',
+            label: 'Equipamentos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.build),
-            label: '',
+            label: 'Peças',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on),
+            label: 'Furos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: '',
+            label: 'Funcionários',
           ),
         ],
-        currentIndex: 1, // Change the current index to match the icon for peças
+        currentIndex: 1,
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {
-          // Handle navigation
+          switch (index) {
+            case 0:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              break;
+            case 1:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              break;
+            case 2:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              break;
+            case 3:
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              break;
+          }
         },
       ),
     );

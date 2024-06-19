@@ -5,7 +5,6 @@ import 'equipamentos_screen.dart';
 import 'pecas_screen.dart';
 import 'furos_screen.dart';
 import 'funcionarios_screen.dart';
-import 'logout_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -40,7 +39,6 @@ class MyApp extends StatelessWidget {
         '/pecas': (context) => PecasScreen(),
         '/furos': (context) => FurosScreen(),
         '/funcionarios': (context) => FuncionariosScreen(),
-        '/logout': (context) => LogoutScreen(),
       },
     );
   }
