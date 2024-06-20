@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/equipamentos_screen.dart';
-import 'package:flutter_application_1/pecas_screen.dart';
-import 'package:flutter_application_1/furos_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'equipamentos_screen.dart';
+import 'pecas_screen.dart';
+import 'furos_screen.dart';
 import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/users';
@@ -213,7 +213,6 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
       setState(() {
         futureFuncionarios = fetchFuncionarios();
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Funcionário deletado com sucesso.'),
@@ -224,6 +223,28 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Falha ao deletar funcionário.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void updateAndReload(String id, Funcionario funcionario) async {
+    try {
+      await updateFuncionario(id, funcionario);
+      setState(() {
+        futureFuncionarios = fetchFuncionarios();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Funcionário atualizado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar funcionário.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -619,20 +640,7 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                       senha: senha,
                     );
 
-                    updateFuncionario(funcionario.id, updatedFuncionario)
-                        .then((_) {
-                      setState(() {
-                        futureFuncionarios = fetchFuncionarios();
-                      });
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao atualizar funcionário.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    updateAndReload(funcionario.id, updatedFuncionario);
                   },
                   child: Text('Salvar'),
                 ),

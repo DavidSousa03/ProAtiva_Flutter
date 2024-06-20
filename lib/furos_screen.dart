@@ -146,31 +146,6 @@ class _FurosScreenState extends State<FurosScreen> {
     );
   }
 
-  void updateFuroLiberado(Furo furo, bool liberado) {
-    final updatedFuro = Furo(
-      id: furo.id,
-      obra: furo.obra,
-      cliente: furo.cliente,
-      responsavel: furo.responsavel,
-      assistente: furo.assistente,
-      observacao: furo.observacao,
-      liberado: liberado,
-    );
-
-    updateFuro(furo.id, updatedFuro).then((_) {
-      setState(() {
-        futureFuros = fetchFuros();
-      });
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Falha ao atualizar liberado.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    });
-  }
-
   void addAndReload(Furo furo) {
     addFuro(furo).then((_) {
       setState(() {
@@ -193,7 +168,6 @@ class _FurosScreenState extends State<FurosScreen> {
       setState(() {
         futureFuros = fetchFuros();
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Furo deletado com sucesso.'),
@@ -208,6 +182,42 @@ class _FurosScreenState extends State<FurosScreen> {
         ),
       );
     }
+  }
+
+  void updateAndReload(String id, Furo furo) async {
+    try {
+      await updateFuro(id, furo);
+      setState(() {
+        futureFuros = fetchFuros();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Furo atualizado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar furo.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void updateFuroLiberado(Furo furo, bool liberado) {
+    final updatedFuro = Furo(
+      id: furo.id,
+      obra: furo.obra,
+      cliente: furo.cliente,
+      responsavel: furo.responsavel,
+      assistente: furo.assistente,
+      observacao: furo.observacao,
+      liberado: liberado,
+    );
+
+    updateAndReload(furo.id, updatedFuro);
   }
 
   @override
@@ -377,7 +387,8 @@ class _FurosScreenState extends State<FurosScreen> {
                   MaterialPageRoute(builder: (context) => FurosScreen()));
               break;
             case 3:
-              Navigator.pushReplacement(context,
+              Navigator.pushReplacement(
+                  context,
                   MaterialPageRoute(
                       builder: (context) => FuncionariosScreen()));
               break;
@@ -466,9 +477,7 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty ||
-                        cliente.isEmpty ||
-                        responsavel.isEmpty) {
+                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -595,9 +604,7 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty ||
-                        cliente.isEmpty ||
-                        responsavel.isEmpty) {
+                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -618,19 +625,8 @@ class _FurosScreenState extends State<FurosScreen> {
                       liberado: liberado,
                     );
 
-                    updateFuro(furo.id, updatedFuro).then((_) {
-                      setState(() {
-                        futureFuros = fetchFuros();
-                      });
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao atualizar furo.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    updateAndReload(furo.id, updatedFuro);
+                    Navigator.of(context).pop();
                   },
                   child: Text('Salvar'),
                 ),

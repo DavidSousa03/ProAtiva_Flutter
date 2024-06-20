@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/equipamentos_screen.dart';
-import 'package:flutter_application_1/funcionarios_screen.dart';
-import 'package:flutter_application_1/furos_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'equipamentos_screen.dart';
+import 'funcionarios_screen.dart';
+import 'furos_screen.dart';
 import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/pecas';
@@ -146,31 +146,6 @@ class _PecasScreenState extends State<PecasScreen> {
     );
   }
 
-  void updatePecaQuantidade(Peca peca, int quantidade) {
-    final updatedPeca = Peca(
-      id: peca.id,
-      nome: peca.nome,
-      equipamento: peca.equipamento,
-      quantidade: quantidade,
-      codigo: peca.codigo,
-      marca: peca.marca,
-      observacao: peca.observacao,
-    );
-
-    updatePeca(peca.id, updatedPeca).then((_) {
-      setState(() {
-        futurePecas = fetchPecas();
-      });
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Falha ao atualizar quantidade.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    });
-  }
-
   void addAndReload(Peca peca) {
     addPeca(peca).then((_) {
       setState(() {
@@ -193,7 +168,6 @@ class _PecasScreenState extends State<PecasScreen> {
       setState(() {
         futurePecas = fetchPecas();
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Peça deletada com sucesso.'),
@@ -204,6 +178,28 @@ class _PecasScreenState extends State<PecasScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Falha ao deletar peça.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void updateAndReload(String id, Peca peca) async {
+    try {
+      await updatePeca(id, peca);
+      setState(() {
+        futurePecas = fetchPecas();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Peça atualizada com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar peça.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -298,14 +294,27 @@ class _PecasScreenState extends State<PecasScreen> {
                               DataCell(Text(peca.equipamento)),
                               DataCell(
                                 TextField(
-                                  controller: TextEditingController(text: peca.quantidade.toString()),
+                                  controller: TextEditingController(
+                                      text: peca.quantidade.toString()),
                                   keyboardType: TextInputType.number,
                                   decoration: InputDecoration(
                                     border: InputBorder.none,
                                   ),
                                   onSubmitted: (value) {
-                                    final updatedQuantidade = int.tryParse(value) ?? peca.quantidade;
-                                    updatePecaQuantidade(peca, updatedQuantidade);
+                                    final updatedQuantidade =
+                                        int.tryParse(value) ??
+                                            peca.quantidade;
+                                    updateAndReload(
+                                        peca.id,
+                                        Peca(
+                                          id: peca.id,
+                                          nome: peca.nome,
+                                          equipamento: peca.equipamento,
+                                          quantidade: updatedQuantidade,
+                                          codigo: peca.codigo,
+                                          marca: peca.marca,
+                                          observacao: peca.observacao,
+                                        ));
                                   },
                                 ),
                               ),
@@ -317,11 +326,13 @@ class _PecasScreenState extends State<PecasScreen> {
                                   children: [
                                     IconButton(
                                       icon: Icon(Icons.edit),
-                                      onPressed: () => _showEditPecaDialog(peca),
+                                      onPressed: () =>
+                                          _showEditPecaDialog(peca),
                                     ),
                                     IconButton(
                                       icon: Icon(Icons.delete),
-                                      onPressed: () => _showDeleteConfirmationDialog(peca),
+                                      onPressed: () =>
+                                          _showDeleteConfirmationDialog(peca),
                                     ),
                                   ],
                                 ),
@@ -370,16 +381,24 @@ class _PecasScreenState extends State<PecasScreen> {
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EquipamentosScreen()));
               break;
             case 1:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (context) => PecasScreen()));
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (context) => FurosScreen()));
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => FuncionariosScreen()));
               break;
           }
         },
@@ -463,7 +482,8 @@ class _PecasScreenState extends State<PecasScreen> {
                     if (nome.isEmpty || codigo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome e Código são campos obrigatórios.'),
+                          content: Text(
+                              'Nome e Código são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -586,7 +606,8 @@ class _PecasScreenState extends State<PecasScreen> {
                     if (nome.isEmpty || codigo.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Nome e Código são campos obrigatórios.'),
+                          content: Text(
+                              'Nome e Código são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -603,19 +624,7 @@ class _PecasScreenState extends State<PecasScreen> {
                       observacao: observacao,
                     );
 
-                    updatePeca(peca.id, updatedPeca).then((_) {
-                      setState(() {
-                        futurePecas = fetchPecas();
-                      });
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao atualizar peça.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    updateAndReload(peca.id, updatedPeca);
                   },
                   child: Text('Salvar'),
                 ),

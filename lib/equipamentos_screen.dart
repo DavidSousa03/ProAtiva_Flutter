@@ -199,7 +199,6 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
       setState(() {
         futureEquipments = fetchEquipments();
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Equipamento deletado com sucesso.'),
@@ -210,6 +209,28 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Falha ao deletar equipamento.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void updateAndReload(String id, Equipment equipment) async {
+    try {
+      await updateEquipment(id, equipment);
+      setState(() {
+        futureEquipments = fetchEquipments();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Equipamento atualizado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao atualizar equipamento.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -634,20 +655,7 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                       alugadoPor: equipment.alugadoPor,
                     );
 
-                    updateEquipment(equipment.id, updatedEquipment)
-                        .then((_) {
-                      setState(() {
-                        futureEquipments = fetchEquipments();
-                      });
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao atualizar equipamento.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    updateAndReload(equipment.id, updatedEquipment);
                   },
                   child: Text('Salvar'),
                 ),
