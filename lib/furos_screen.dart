@@ -187,6 +187,29 @@ class _FurosScreenState extends State<FurosScreen> {
     });
   }
 
+  void deleteAndReload(String id) async {
+    try {
+      await deleteFuro(id);
+      setState(() {
+        futureFuros = fetchFuros();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Furo deletado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao deletar furo.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -204,8 +227,7 @@ class _FurosScreenState extends State<FurosScreen> {
         actions: [
           IconButton(
             icon: Padding(
-              padding: const EdgeInsets.only(
-                  right: 8.0), 
+              padding: const EdgeInsets.only(right: 8.0),
               child: Icon(
                 Icons.logout,
                 color: Colors.white,
@@ -231,11 +253,10 @@ class _FurosScreenState extends State<FurosScreen> {
                   onPressed: () => _showAddFuroDialog(),
                   style: ButtonStyle(
                     backgroundColor:
-                        WidgetStateProperty.all(Color(0xFF303972)),
-                    padding: WidgetStateProperty.all(
+                        MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(
                         EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-                    foregroundColor: WidgetStateProperty.all(
-                        Colors.white),
+                    foregroundColor: MaterialStateProperty.all(Colors.white),
                   ),
                   child: Text('Criar'),
                 )
@@ -255,8 +276,8 @@ class _FurosScreenState extends State<FurosScreen> {
                   } else {
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: DataTable(
                           columns: [
                             DataColumn(label: Text('Obra')),
@@ -280,7 +301,8 @@ class _FurosScreenState extends State<FurosScreen> {
                               DataCell(Checkbox(
                                 value: furo.liberado,
                                 onChanged: (value) {
-                                  updateFuroLiberado(furo, value ?? furo.liberado);
+                                  updateFuroLiberado(
+                                      furo, value ?? furo.liberado);
                                 },
                               )),
                               DataCell(
@@ -288,11 +310,13 @@ class _FurosScreenState extends State<FurosScreen> {
                                   children: [
                                     IconButton(
                                       icon: Icon(Icons.edit),
-                                      onPressed: () => _showEditFuroDialog(furo),
+                                      onPressed: () =>
+                                          _showEditFuroDialog(furo),
                                     ),
                                     IconButton(
                                       icon: Icon(Icons.delete),
-                                      onPressed: () => _showDeleteConfirmationDialog(furo),
+                                      onPressed: () =>
+                                          _showDeleteConfirmationDialog(furo),
                                     ),
                                   ],
                                 ),
@@ -335,22 +359,27 @@ class _FurosScreenState extends State<FurosScreen> {
             label: 'Funcionários',
           ),
         ],
-        currentIndex: 2, 
+        currentIndex: 2,
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EquipamentosScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => EquipamentosScreen()));
               break;
             case 1:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PecasScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => PecasScreen()));
               break;
             case 2:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FurosScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => FurosScreen()));
               break;
             case 3:
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => FuncionariosScreen()));
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(
+                      builder: (context) => FuncionariosScreen()));
               break;
           }
         },
@@ -437,10 +466,13 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
+                    if (obra.isEmpty ||
+                        cliente.isEmpty ||
+                        responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Obra, Cliente e Responsável são campos obrigatórios.'),
+                          content: Text(
+                              'Obra, Cliente e Responsável são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -563,10 +595,13 @@ class _FurosScreenState extends State<FurosScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (obra.isEmpty || cliente.isEmpty || responsavel.isEmpty) {
+                    if (obra.isEmpty ||
+                        cliente.isEmpty ||
+                        responsavel.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Obra, Cliente e Responsável são campos obrigatórios.'),
+                          content: Text(
+                              'Obra, Cliente e Responsável são campos obrigatórios.'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -584,10 +619,10 @@ class _FurosScreenState extends State<FurosScreen> {
                     );
 
                     updateFuro(furo.id, updatedFuro).then((_) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => FurosScreen()),
-                        (Route<dynamic> route) => false,
-                      );
+                      setState(() {
+                        futureFuros = fetchFuros();
+                      });
+                      Navigator.of(context).pop();
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -623,19 +658,8 @@ class _FurosScreenState extends State<FurosScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deleteFuro(furo.id).then((_) {
-                  setState(() {
-                    futureFuros = fetchFuros();
-                  });
-                  Navigator.of(context).pop();
-                }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Falha ao deletar furo.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                });
+                deleteAndReload(furo.id);
+                Navigator.of(context).pop();
               },
               child: Text('Excluir'),
             ),

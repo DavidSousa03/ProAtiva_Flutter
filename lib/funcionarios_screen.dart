@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/equipamentos_screen.dart';
+import 'package:flutter_application_1/pecas_screen.dart';
+import 'package:flutter_application_1/furos_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
-import 'equipamentos_screen.dart';
-import 'pecas_screen.dart';
-import 'furos_screen.dart';
 import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/users';
@@ -207,6 +207,29 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
     });
   }
 
+  void deleteAndReload(String id) async {
+    try {
+      await deleteFuncionario(id);
+      setState(() {
+        futureFuncionarios = fetchFuncionarios();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Funcionário deletado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao deletar funcionário.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -250,11 +273,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                   onPressed: () => _showAddFuncionarioDialog(),
                   style: ButtonStyle(
                     backgroundColor:
-                        WidgetStateProperty.all(Color(0xFF303972)),
-                    padding: WidgetStateProperty.all(
+                        MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(
                         EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-                    foregroundColor: WidgetStateProperty.all(
-                        Colors.white),
+                    foregroundColor: MaterialStateProperty.all(Colors.white),
                   ),
                   child: Text('Criar'),
                 )
@@ -274,8 +296,8 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
                   } else {
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: DataTable(
                           columns: [
                             DataColumn(label: Text('Nome')),
@@ -599,11 +621,10 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
 
                     updateFuncionario(funcionario.id, updatedFuncionario)
                         .then((_) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (context) => FuncionariosScreen()),
-                        (Route<dynamic> route) => false,
-                      );
+                      setState(() {
+                        futureFuncionarios = fetchFuncionarios();
+                      });
+                      Navigator.of(context).pop();
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -639,19 +660,8 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deleteFuncionario(funcionario.id).then((_) {
-                  setState(() {
-                    futureFuncionarios = fetchFuncionarios();
-                  });
-                  Navigator.of(context).pop();
-                }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Falha ao deletar funcionário.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                });
+                deleteAndReload(funcionario.id);
+                Navigator.of(context).pop();
               },
               child: Text('Excluir'),
             ),
@@ -690,76 +700,6 @@ class _FuncionariosScreenState extends State<FuncionariosScreen> {
           ],
         );
       },
-    );
-  }
-}
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Proativa',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    EquipamentosScreen(),
-    PecasScreen(),
-    FurosScreen(),
-    FuncionariosScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu),
-            label: 'Equipamentos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.build),
-            label: 'Peças',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.location_on),
-            label: 'Furos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Funcionários',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-      ),
     );
   }
 }

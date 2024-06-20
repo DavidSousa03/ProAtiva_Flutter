@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/funcionarios_screen.dart';
-import 'package:flutter_application_1/furos_screen.dart';
-import 'package:flutter_application_1/pecas_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'funcionarios_screen.dart';
+import 'furos_screen.dart';
+import 'pecas_screen.dart';
 import 'login_page.dart';
 
 const String apiUrl = 'https://proativa.onrender.com/equipamentos';
@@ -177,6 +177,45 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
     );
   }
 
+  void addAndReload(Equipment equipment) {
+    addEquipment(equipment).then((_) {
+      setState(() {
+        futureEquipments = fetchEquipments();
+      });
+      Navigator.of(context).pop();
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao adicionar equipamento.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    });
+  }
+
+  void deleteAndReload(String id) async {
+    try {
+      await deleteEquipment(id);
+      setState(() {
+        futureEquipments = fetchEquipments();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Equipamento deletado com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao deletar equipamento.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,8 +233,7 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
         actions: [
           IconButton(
             icon: Padding(
-              padding: const EdgeInsets.only(
-                  right: 8.0), 
+              padding: const EdgeInsets.only(right: 8.0),
               child: Icon(
                 Icons.logout,
                 color: Colors.white,
@@ -217,15 +255,13 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                   'Equipamentos',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-              ElevatedButton(
+                ElevatedButton(
                   onPressed: () => _showAddEquipmentDialog(),
                   style: ButtonStyle(
-                    backgroundColor:
-                        WidgetStateProperty.all(Color(0xFF303972)),
-                    padding: WidgetStateProperty.all(
+                    backgroundColor: MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(
                         EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-                    foregroundColor: WidgetStateProperty.all(
-                        Colors.white),
+                    foregroundColor: MaterialStateProperty.all(Colors.white),
                   ),
                   child: Text('Criar'),
                 )
@@ -245,8 +281,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                   } else {
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: DataTable(
                           columns: [
                             DataColumn(label: Text('Nome')),
@@ -465,19 +501,7 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                       hostname: 'HOST0001',
                     );
 
-                    addEquipment(newEquipment).then((_) {
-                      setState(() {
-                        futureEquipments = fetchEquipments();
-                      });
-                      Navigator.of(context).pop();
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Falha ao adicionar equipamento.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    });
+                    addAndReload(newEquipment);
                   },
                   child: Text('Salvar'),
                 ),
@@ -610,12 +634,12 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
                       alugadoPor: equipment.alugadoPor,
                     );
 
-                    updateEquipment(equipment.id, updatedEquipment).then((_) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                            builder: (context) => EquipamentosScreen()),
-                        (Route<dynamic> route) => false,
-                      );
+                    updateEquipment(equipment.id, updatedEquipment)
+                        .then((_) {
+                      setState(() {
+                        futureEquipments = fetchEquipments();
+                      });
+                      Navigator.of(context).pop();
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -651,19 +675,8 @@ class _EquipamentosScreenState extends State<EquipamentosScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deleteEquipment(equipment.id).then((_) {
-                  setState(() {
-                    futureEquipments = fetchEquipments();
-                  });
-                  Navigator.of(context).pop();
-                }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Falha ao deletar equipamento.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                });
+                deleteAndReload(equipment.id);
+                Navigator.of(context).pop();
               },
               child: Text('Excluir'),
             ),

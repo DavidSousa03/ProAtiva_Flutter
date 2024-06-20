@@ -37,10 +37,23 @@ class _LoginPageState extends State<LoginPage> {
                       controller: _emailController,
                       decoration: InputDecoration(
                         hintText: 'Email',
-                        border: OutlineInputBorder(),
+                        hintStyle: TextStyle(color: Colors.white),
+                        labelText: 'Email',
+                        labelStyle: TextStyle(color: Colors.white),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
                       ),
+                      style: TextStyle(color: Colors.white),
                       onChanged: (text) {
-                        _emailController.value = _emailController.value.copyWith(
+                        _emailController.value =
+                            _emailController.value.copyWith(
                           text: text.toLowerCase(),
                           selection: TextSelection.fromPosition(
                             TextPosition(offset: text.length),
@@ -54,8 +67,20 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: true,
                       decoration: InputDecoration(
                         hintText: 'Senha',
-                        border: OutlineInputBorder(),
+                        hintStyle: TextStyle(color: Colors.white),
+                        labelText: 'Senha',
+                        labelStyle: TextStyle(color: Colors.white),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
                       ),
+                      style: TextStyle(color: Colors.white),
                     ),
                     const SizedBox(height: 20.0),
                     SizedBox(
@@ -76,7 +101,8 @@ class _LoginPageState extends State<LoginPage> {
                               _passwordController.text,
                             );
                             if (token != null) {
-                              Navigator.of(context).pushReplacementNamed('/home');
+                              Navigator.of(context)
+                                  .pushReplacementNamed('/home');
                             }
                           } catch (e) {
                             showDialog(

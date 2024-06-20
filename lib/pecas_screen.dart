@@ -187,6 +187,29 @@ class _PecasScreenState extends State<PecasScreen> {
     });
   }
 
+  void deleteAndReload(String id) async {
+    try {
+      await deletePeca(id);
+      setState(() {
+        futurePecas = fetchPecas();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Peça deletada com sucesso.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha ao deletar peça.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,11 +254,10 @@ class _PecasScreenState extends State<PecasScreen> {
                   onPressed: () => _showAddPecaDialog(),
                   style: ButtonStyle(
                     backgroundColor:
-                        WidgetStateProperty.all(Color(0xFF303972)),
-                    padding: WidgetStateProperty.all(
+                        MaterialStateProperty.all(Color(0xFF303972)),
+                    padding: MaterialStateProperty.all(
                         EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-                    foregroundColor: WidgetStateProperty.all(
-                        Colors.white),
+                    foregroundColor: MaterialStateProperty.all(Colors.white),
                   ),
                   child: Text('Criar'),
                 )
@@ -255,8 +277,8 @@ class _PecasScreenState extends State<PecasScreen> {
                   } else {
                     return SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: Container(
-                        width: MediaQuery.of(context).size.width,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
                         child: DataTable(
                           columns: [
                             DataColumn(label: Text('Nome')),
@@ -582,7 +604,9 @@ class _PecasScreenState extends State<PecasScreen> {
                     );
 
                     updatePeca(peca.id, updatedPeca).then((_) {
-                      updatePecaQuantidade(peca, quantidade);
+                      setState(() {
+                        futurePecas = fetchPecas();
+                      });
                       Navigator.of(context).pop();
                     }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -619,19 +643,8 @@ class _PecasScreenState extends State<PecasScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                deletePeca(peca.id).then((_) {
-                  setState(() {
-                    futurePecas = fetchPecas();
-                  });
-                  Navigator.of(context).pop();
-                }).catchError((error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Falha ao deletar peça.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                });
+                deleteAndReload(peca.id);
+                Navigator.of(context).pop();
               },
               child: Text('Excluir'),
             ),
